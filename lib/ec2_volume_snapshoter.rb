@@ -87,7 +87,7 @@ class EC2VolumeSnapshoter
       if nsnaps-limit > 0
         dates = snapshots.keys.sort
         puts dates.inspect
-        extra_snapshots = dates[0..-limit]
+        extra_snapshots = dates[0..-(limit+1)]
         remaining_snapshots = dates[-limit..-1]
         extra_snapshots.each do |date|
           snapshots[date].each do |snap|
