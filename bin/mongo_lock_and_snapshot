@@ -13,7 +13,7 @@ require 'ec2_volume_snapshoter'
 opts = Trollop::options do
   opt :access_key_id, "Access Key Id for AWS", :type => :string, :required => true
   opt :secret_access_key, "Secret Access Key for AWS", :type => :string, :required => true
-  opt :region, "Target region with instances", :type => :string
+  opt :region, "Target region with instances", :type => :string, :required => true
   opt :instance_id, "Instance identifier", :type => :string, :required => true
   opt :hostname, "Hostname to look for", :default => "localhost"
   opt :port, "Mongo port to connect to", :default => 27017

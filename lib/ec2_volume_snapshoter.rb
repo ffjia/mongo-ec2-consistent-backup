@@ -39,12 +39,12 @@ class EC2VolumeSnapshoter
   attr_reader :instance_id, :prefix
   # Need access_key_id, secret_access_key and instance_id
   # If not provided, attempt to fetch current instance_id
-  def initialize(aki, sak, instance_id, prefix)
+  def initialize(aki, sak, region, instance_id, prefix)
 
     @instance_id = instance_id
     @prefix = prefix
 
-    @compute = Fog::Compute.new({:provider => 'AWS', :aws_access_key_id => aki, :aws_secret_access_key => sak})
+    @compute = Fog::Compute.new({:provider => 'AWS', :aws_access_key_id => aki, :aws_secret_access_key => sak, :region => region })
   end
   # Snapshots the list of devices
   # devices is an array of device attached to the instance (/dev/foo)
@@ -70,13 +70,15 @@ class EC2VolumeSnapshoter
       @compute.tags.create(:resource_id => snapshot.id, :key =>"instance_id", :value =>instance_id)
       @compute.tags.create(:resource_id => snapshot.id, :key =>"date", :value => ts)
     end
-    log "Waiting for snapshots to complete."
-    sn.each do |s|
-      begin
-        sleep(3)
-        s.reload
-      end while s.state == 'nil' || s.state == 'pending'
-    end
+
+    # DO NOT need to wait for creating EBS snapshot
+    #log "Waiting for snapshots to complete."
+    #sn.each do |s|
+    #  begin
+    #    sleep(3)
+    #    s.reload
+    #  end while s.state == 'nil' || s.state == 'pending'
+    #end
 
     if limit != 0
       # populate data structure with updated information
@@ -97,7 +99,7 @@ class EC2VolumeSnapshoter
     end
   end
 
-  # List snapshots for a set of device and
+  # List snapshots for a set of device
   require 'pp'
   def list_snapshots(devices)
     volume_map = []
