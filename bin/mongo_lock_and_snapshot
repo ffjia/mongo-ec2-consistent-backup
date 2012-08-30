@@ -39,7 +39,7 @@ locker = MongoHelper::DataLocker.new(opts[:hostname], opts[:port], opts[:user], 
 locker.lock
 
 begin
-  snapshoter = EC2VolumeSnapshoter.new(aki, sak, region, instance_id, prefix)
+  snapshoter = EC2VolumeSnapshoter.new(aki, sak, region, prefix)
   limit = if opts[:limit] == nil
     EC2VolumeSnapshoter::KINDS[opts[:type]]
   else

@@ -39,7 +39,7 @@ class EC2VolumeSnapshoter
   attr_reader :instance_id, :prefix
   # Need access_key_id, secret_access_key and instance_id
   # If not provided, attempt to fetch current instance_id
-  def initialize(aki, sak, region, instance_id = open("http://169.254.169.254/latest/meta-data/instance-id").read, prefix = nil)
+  def initialize(aki, sak, region, prefix, instance_id = open("http://169.254.169.254/latest/meta-data/instance-id").read)
 
     @instance_id = instance_id
     @prefix = prefix
