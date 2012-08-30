@@ -9,16 +9,16 @@ require 'open-uri'
 - http://www.mongodb.org/display/DOCS/getCmdLineOpts+command
 =end
 
-
 =begin
 /proc/mdstat content:
 
-Personalities : [raid0] 
+Personalities : [raid0]
 md0 : active raid0 sdo[3] sdn[2] sdm[1] sdl[0]
       838859776 blocks 256k chunks
-      
+
 unused devices: <none>
 =end
+
 class NoSuchSetException < Exception; end
 # Parse the existing RAID sets by reading /prod/mdstat
 # Cheap alternative to using FFI to interface with libdm
@@ -32,24 +32,28 @@ class MDInspector
     if File.exists?(mdfile)
       stat_data = File.open(mdfile).read.split(/\n/)
       personalities_line = stat_data.grep(/#{PERSONALITIES}/)
+
       if personalities_line =~ /#{PERSONALITIES}(.+)/
         @personalities =  $1
       else
         @has_md = false
       end
+
       @set_metadata = {}
       stat_data.grep(/^md[0-9]+ : /).each do |md_info|
         if md_info =~ /^md([0-9]+) : active ([^ ]+) (.*)$/
           set_name = "md#{$1}"
           personality = $2
           drives = $3.split(/ /).map{ |i| "/dev/"+i.gsub(/\[[0-9]+\]/,'') }.to_a
-          @set_metadata[set_name] =  { :set_name=> set_name, :personality => personality, 
+          @set_metadata[set_name] =  { :set_name=> set_name, :personality => personality,
             :drives => drives}
         end
       end
+
       @has_md = true if @set_metadata.keys.length > 0
     end
   end
+
   # Returns the information about the MD set @name
   def set(name)
     # Handle "/dev/foobar" instead of "foobar"
@@ -71,10 +75,12 @@ class MountInspector
       @fs_to_dev[m[1]] = m[0] if m[1] != "none"
     end
   end
+
   def where_is_mounted(device)
-    return @dev_to_fs[device] if @dev_to_fs.has_key?(device) 
+    return @dev_to_fs[device] if @dev_to_fs.has_key?(device)
     raise NotMountedException.new(device)
   end
+
   def which_device(folder)
     # Level 0 optimisation+ Handle "/" folder
     return @fs_to_dev[folder] if @fs_to_dev.has_key?(folder)
@@ -92,14 +98,15 @@ end
 module MongoHelper
   class DataLocker
     attr_reader :path
-    def initialize(port = 27017, host = 'localhost')
-      @m = Mongo::Connection.new(host, port)
-      args =  @m['admin'].command({'getCmdLineOpts' => 1 })['argv']
-      p = args.index('--dbpath')
-      @path = args[p+1]
-      @path = File.readlink(@path) if File.symlink?(@path)
 
+    def initialize(host = 'localhost', port = 27017, user = nil, password = nil)
+      @m = Mongo::Connection.new(host, port, :slave_ok => true)
+      @m['admin'].authenticate(user, password)
+      args =  @m['admin'].command({'getCmdLineOpts' => 1 })['parsed']
+      @path = args['dbpath']
+      @path = File.readlink(@path) if File.symlink?(@path)
     end
+
     def lock
       return if locked?
       @m.lock!
@@ -108,9 +115,11 @@ module MongoHelper
       end
       raise "Not locked as asked" if !locked?
     end
+
     def locked?
       @m.locked?
     end
+
     def unlock
       return if !locked?
       raise "Already unlocked" if !locked?
@@ -129,21 +138,26 @@ end
 if __FILE__ == $0
   require 'trollop'
   opts = Trollop::options do
+    opt :hostname, "Hostname to look for", :type => :string, :required => true
     opt :port, "Mongo port to connect to", :default => 27017
+    opt :user, "Mongo user for authentication", :type => :string, :required => true
+    opt :password, "Mongo password for authentication", :type => :string, :required => true
   end
 
   # First connect to mongo and find the dbpath
+  host = opts[:hostname]
   port = opts[:port]
-  m = MongoHelper::DataLocker.new(port)
+  user = opts[:user]
+  password = opts[:password]
+  m = MongoHelper::DataLocker.new(host, port, user, password)
   data_location = m.path
   log "Mongo at #{port} has its data in #{data_location}."
-  
 
   mount_inspector = MountInspector.new
   raid_set = mount_inspector.which_device(data_location)
   log "This path is on the device #{raid_set}."
 
-  begin 
+  begin
     raid_sets = MDInspector.new
     drives = raid_sets.set(raid_set)[:drives]
 
@@ -161,7 +175,7 @@ if __FILE__ == $0
     #   m.unlock
     #   log "Unlocked mongo"
     # end
-    
+
   rescue NoSuchSetException => e
     log "Device #{raid_set} is not a MD device, bailing out"
     raise e
