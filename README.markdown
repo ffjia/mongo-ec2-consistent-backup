@@ -9,7 +9,7 @@ Suite of tools to backup and manage snapshots of MongoDB data set to EC2 Snapsho
 Snapshot a list of devices on a given instance on ec2.
 
 ```shell
-/root/bin/mongo-ec2-consistent-backup/bin# ruby lock_and_snapshot -a ACCESS_KEY -s 'SECRET_KEY' -d "/dev/sdc,/dev/sdb" -h host -r us-east-1 -l 7 >> /tmp/mongo_backup.log 2>&1
+/root/bin/mongo-ec2-consistent-backup/bin# ruby mongo_lock_and_snapshot -a ACCESS_KEY -s 'SECRET_KEY' -r us-east-1 -h host -p 27018 -u user -w passwd -e prefix -t daily -d "/dev/sdc,/dev/sdb" &>> /tmp/mongo_backup.log
 ```
 
 * --access-key-id, -a :   Access Key Id for AWS
