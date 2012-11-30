@@ -1,4 +1,4 @@
-# Mongo consistent backup over RAID EBS disks on EC2 instance
+# Mongo consistent backup over RAID EBS disks on EC2 instance (without xfs)
 
 Suite of tools to backup and manage snapshots of MongoDB data set to EC2 Snapshots.
 
